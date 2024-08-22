@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>exemplo carrossel</title>
+    <style>
+        body {
+            overflow-x: hidden; /* impede o scroll horizontal da página inteira */
+        }
+
+        .carousel-container {
+            width: 100%;
+            overflow: hidden; /* garante que o conteúdo do carrossel não ultrapasse o container */
+            position: relative;
+            margin: auto; /* opcional: centraliza o container horizontalmente */
+        }
+
+        .carousel {
+            display: flex;
+            transition: transform 0.3s ease;
+            cursor: grab;
+            will-change: transform;
+        }
+
+        .carousel-item {
+            flex: 0 0 auto; /* impede que o item encolha ou expanda */
+            margin-right: 10px;
+            background-color: #ccc;
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        /* desktop */
+        @media (min-width: 768px) {
+            .carousel-item {
+                min-width: calc(100% / 7.5); /* ajusta para o número de itens por vez */
+            }
+        }
+
+        /* mobile */
+        @media (max-width: 767px) {
+            .carousel-item {
+                min-width: calc(30% - 10px); /* exibe 2 itens e metade do terceiro */
+            }
+        }
+
+        .carousel-container::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 50px;
+            height: 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="carousel-container">
+        <div class="carousel" id="carousel1">
+            <div class="carousel-item">item 1</div>
+            <div class="carousel-item">item 2</div>
+            <div class="carousel-item">item 3</div>
+            <div class="carousel-item">item 4</div>
+            <div class="carousel-item">item 5</div>
+            <div class="carousel-item">item 6</div>
+            <div class="carousel-item">item 7</div>
+            <div class="carousel-item">item 8</div>
+            <div class="carousel-item">item 9</div>
+            <div class="carousel-item">item 10</div>
+        </div>
+    </div>
+    <div class="carousel-container">
+        <div class="carousel" id="carousel2">
+            <div class="carousel-item">item 1</div>
+            <div class="carousel-item">item 2</div>
+            <div class="carousel-item">item 3</div>
+            <div class="carousel-item">item 4</div>
+            <div class="carousel-item">item 5</div>
+            <div class="carousel-item">item 6</div>
+            <div class="carousel-item">item 7</div>
+        </div>
+    </div>
+    <script>
+        function setupCarousel(carousel) {
+            let isDragging = false;
+            let startPosition = 0;
+            let currentTranslate = 0;
+            let prevTranslate = 0;
+            let maxTranslate = 0;
+            let minTranslate = 0;
+            let animationID;
+
+            const getPositionX = (event) => {
+                return event.type.includes('mouse') ? event.pageX : event.touches[0].clientX;
+            };
+
+            const setCarouselPosition = () => {
+                if (currentTranslate > minTranslate) {
+                    currentTranslate = minTranslate;
+                } else if (currentTranslate < maxTranslate) {
+                    currentTranslate = maxTranslate;
+                }
+                carousel.style.transform = `translateX(${currentTranslate}px)`;
+            };
+
+            const animation = () => {
+                setCarouselPosition();
+                if (isDragging) requestAnimationFrame(animation);
+            };
+
+            const calculateBoundaries = () => {
+                const containerWidth = carousel.parentElement.offsetWidth;
+                const totalItemsWidth = carousel.scrollWidth;
+                maxTranslate = -(totalItemsWidth - containerWidth);
+                minTranslate = 0; // impede o movimento para frente
+            };
+
+            const startDragging = (event) => {
+                document.querySelectorAll('.carousel').forEach(c => {
+                    if (c !== carousel) {
+                        c.style.cursor = 'grab';
+                        cancelAnimationFrame(animationID);
+                    }
+                });
+
+                isDragging = true;
+                startPosition = getPositionX(event);
+                animationID = requestAnimationFrame(animation);
+                carousel.style.cursor = 'grabbing';
+                event.stopPropagation();
+            };
+
+            const stopDragging = () => {
+                if (isDragging) {
+                    isDragging = false;
+                    cancelAnimationFrame(animationID);
+                    prevTranslate = currentTranslate;
+                    carousel.style.cursor = 'grab';
+                }
+            };
+
+            carousel.addEventListener('mousedown', startDragging);
+            carousel.addEventListener('mousemove', (event) => {
+                if (isDragging) {
+                    const currentPosition = getPositionX(event);
+                    currentTranslate = prevTranslate + currentPosition - startPosition;
+                }
+                event.stopPropagation();
+            });
+            carousel.addEventListener('mouseup', stopDragging);
+            carousel.addEventListener('mouseleave', stopDragging);
+
+            carousel.addEventListener('touchstart', (event) => {
+                event.preventDefault(); // evita o comportamento padrao do toque
+                startDragging(event);
+            });
+
+            carousel.addEventListener('touchmove', (event) => {
+                if (isDragging) {
+                    const currentPosition = getPositionX(event);
+                    currentTranslate = prevTranslate + currentPosition - startPosition;
+                }
+                event.stopPropagation();
+            });
+
+            carousel.addEventListener('touchend', stopDragging);
+
+            window.addEventListener('load', calculateBoundaries);
+            window.addEventListener('resize', calculateBoundaries);
+        }
+
+        document.querySelectorAll('.carousel').forEach(setupCarousel);
+    </script>
+</body>
+
+</html>
